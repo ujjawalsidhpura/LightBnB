@@ -81,7 +81,25 @@ exports.addUser = addUser;
  * @return {Promise<[{}]>} A promise to the reservations.
  */
 const getAllReservations = function (guest_id, limit = 10) {
-  return getAllProperties(null, 2);
+
+  const dbQuery = `
+  SELECT reservations.*, properties.* , AVG(property_reviews.rating) AS average_rating
+  FROM reservations
+  JOIN users ON reservations.guest_id = users.id
+  JOIN properties ON properties.id = reservations.property_id
+  JOIN property_reviews ON reservations.id = property_reviews.reservation_id
+  WHERE reservations.guest_id = $1 
+  GROUP BY properties.id, reservations.id
+  LIMIT $2;
+  `
+  const values = [guest_id, limit];
+
+  return pool
+    .query(dbQuery, values)
+    .then((res) => {
+      return res.rows
+    })
+
 }
 exports.getAllReservations = getAllReservations;
 
